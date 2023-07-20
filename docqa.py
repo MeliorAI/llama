@@ -27,7 +27,7 @@ console = Console()
 
 
 DEFAULT_COLLECTION_NAME = 'llama-qa'
-DEFAULT_CHUNK_SIZE = 3500
+DEFAULT_CHUNK_SIZE = 1500
 DEFAULT_CHUNK_OVERLAP = 500
 
 
@@ -123,9 +123,6 @@ class IndexClient:
 
         # 🌈 ChromaDB
         self._init_db(chroma_uri, collection_name)
-
-        # # QA retriever
-        # self._init_retriever()
 
     def _init_db(self, chroma_uri, collection_name):
         rprint("🔧 Initializing vectorstore")

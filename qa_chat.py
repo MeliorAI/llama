@@ -1,41 +1,61 @@
+import chromadb
+import fire
 
-class QAagent:
+from chromadb.utils import embedding_functions
+from llama import Llama
+from rich import print as rprint
+from typing import Optional
 
-    def ask(
-        self,
-        query: str,
-        filters: Dict[str, Any] = {},
-        print_qa: bool = True,
-        print_sources: bool = False,
-    ):
-        if self.db is None:
-            raise NoIndexError(
-                "No document vector database found. Has any document been indexed yet?"
-            )
-        if self.qa is None:
-            raise RetrieverNotInitialized("QA Retriever has not been initialized.")
 
-        with get_openai_callback() as cb:
-            # Get the answer from the chain
-            res = self.qa({"query": query, "filters": filters})
-            answer, docs = res["result"], res["source_documents"]
+def main(
+    embedding_model_id:str = 'all-MiniLM-L6-v2',
+    ckpt_dir: str = 'llama-2-7b-chat',
+    tokenizer_path: str = 'tokenizer.model',
+    temperature: float = 0.6,
+    top_p: float = 0.9,
+    max_seq_len: int = 512,
+    max_batch_size: int = 4,
+    max_gen_len: Optional[int] = None,
+    chroma_host:str = 'localhost',
+    chroma_port:str = '8000',
+    chroma_collection:str = 'llama-qa'
+):
+    rprint("🧬 Initializing DB")
+    emb_f = embedding_functions.SentenceTransformerEmbeddingFunction(embedding_model_id)
+    client = chromadb.HttpClient(host=chroma_host, port=int(chroma_port))
+    col = client.get_collection(chroma_collection, embedding_function=emb_f)
 
-            if print_qa:
-                # Print the result
-                rprint("\n\n> ❓️ [bold]Question:[/bold]")
-                rprint(query)
-                rprint("\n\n> 🤓 [bold]Answer:[/bold]")
-                rprint(answer)
+    rprint("🦙 Initializing Llama")
+    generator = Llama.build(
+        ckpt_dir=ckpt_dir,
+        tokenizer_path=tokenizer_path,
+        max_seq_len=max_seq_len,
+        max_batch_size=max_batch_size,
+    )
 
-                # Print the relevant sources used for the answer
-                if print_sources:
-                    for i, document in enumerate(docs):
-                        rprint(
-                            f"\n> 📚️ [bold]'SOURCE {i}: {document.metadata['source']}':[/bold]"
-                        )
-                        rprint(f"[dim]{document.page_content}[/dim]\n")
+    while query := input("🗣️: "):
 
-            # print openAI consumption
-            rprint(f"[dim]\n-----\n{cb}\n-----\n[dim]")
+        hits = col.query(query_texts=[query])
+        sources = hits['metadata']
+        evidences = hits['documents']
 
-        return answer, docs
+        dialog = [
+                {"role": "system", "content": "You are given the following pieces of context to use to answer"},
+                *[{"role": "system", "content": evidence} for evidence in evidences],
+                {"role": "user", "content": query},
+        ],
+
+        results = generator.chat_completion(
+            [dialog],  # type: ignore
+            max_gen_len=max_gen_len,
+            temperature=temperature,
+            top_p=top_p,
+        )
+
+        for dialog, result in zip(dialogs, results):
+            print(f"🤖: {result['generation']['content']}")
+            print("\n==================================\n")
+
+
+if __name__ == "__main__":
+    fire.Fire(main)

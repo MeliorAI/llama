@@ -1,5 +1,6 @@
 langchain
 funcy
 rich
+sentence_transformers==2.2.2
 chromadb-client==0.4.3.dev0
 pdfminer.six==20221105
