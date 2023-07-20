@@ -1,0 +1,27 @@
+version: "3.9"
+
+x-logging:
+  &default-logging
+  options:
+    max-size: "200k"
+    max-file: "10"
+
+volumes:
+  index_data:
+    driver: local
+  backups:
+    driver: local
+
+networks:
+  net:
+    driver: bridge
+
+services:
+  chroma:
+    image: meliorai/chromadb:0.4.2
+    volumes:
+      - index_data:/chroma/.chroma/index
+    ports:
+      - 8000:8000
+    networks:
+      - net
