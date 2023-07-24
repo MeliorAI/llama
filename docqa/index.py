@@ -9,7 +9,6 @@ from chromadb.types import Collection
 from chromadb.utils import embedding_functions
 from collections import defaultdict
 from funcy import chunks
-from hashlib import sha1
 from langchain.callbacks.manager import CallbackManagerForChainRun
 from langchain.chains import RetrievalQA
 from langchain.docstore.document import Document
@@ -18,36 +17,19 @@ from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
 from rich import print as rprint
+from rich.console import Console
 from tqdm.auto import tqdm
 
+from docqa.constants import DEFAULT_EMBEDDING_MODEL
+from docqa.constants import DEFAULT_COLLECTION_NAME
+from docqa.constants import DEFAULT_CHROMA_URI
+from docqa.constants import DEFAULT_CHUNK_SIZE
+from docqa.constants import DEFAULT_CHUNK_OVERLAP
+from docqa.constants import DEFAULT_N_RESULTS
 
-from rich.console import Console
 
 console = Console()
 
-
-DEFAULT_COLLECTION_NAME = 'llama-qa'
-DEFAULT_CHUNK_SIZE = 1500
-DEFAULT_CHUNK_OVERLAP = 500
-
-
-def file_sha1(filename):
-    h = sha1()
-    b = bytearray(128 * 1024)
-    mv = memoryview(b)
-    with open(filename, "rb", buffering=0) as f:
-        while n := f.readinto(mv):
-            h.update(mv[:n])
-
-    return str(h.hexdigest())
-
-
-class NoIndexError(Exception):
-    pass
-
-
-class RetrieverNotInitialized(Exception):
-    pass
 
 
 class FilteredRetrievalQA(RetrievalQA):
@@ -102,8 +84,8 @@ class FilteredRetrievalQA(RetrievalQA):
 class IndexClient:
     def __init__(
         self,
-        embedding_model_id:str = 'all-MiniLM-L6-v2',
-        chroma_uri: str = 'localhost:8000',
+        embedding_model_id:str = DEFAULT_EMBEDDING_MODEL,
+        chroma_uri: str = DEFAULT_CHROMA_URI,
         collection_name: str = DEFAULT_COLLECTION_NAME,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
         chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
@@ -175,7 +157,7 @@ class IndexClient:
 
     def list_documents(self):
         col = self.db_client.get_collection(self.collection_name)
-        return set(list(map(lambda m: m["id"], col.get()["metadatas"])))
+        return set(list(map(lambda m: m.get("id"), col.get()["metadatas"])))
 
     def delete_documents(self, doc_ids: List[str] = [], filters: Dict[str, Any] = {}):
         col = self.db_client.get_collection(self.collection_name)
@@ -209,7 +191,13 @@ class IndexClient:
         return self._insert_doc_in_db(doc_chunks, doc_id=doc_meta["id"])
 
 
-def index(file_path:str):
+def index(
+    file_path:str,
+    embedding_model_id:str = DEFAULT_EMBEDDING_MODEL,
+    chroma_uri: str = DEFAULT_CHROMA_URI,
+    collection_name: str = DEFAULT_COLLECTION_NAME,
+):
+    """Index a PDF document given its file path"""
     if not file_path.endswith(".pdf"):
         rprint("💥 [red]Only PDFs supported for now[/red]")
         exit(1)
@@ -221,5 +209,85 @@ def index(file_path:str):
     indexer.index_document(pages, doc_meta={"id": sha})
 
 
+def list_docs(
+    embedding_model_id:str = DEFAULT_EMBEDDING_MODEL,
+    chroma_uri: str = DEFAULT_CHROMA_URI,
+    collection_name: str = DEFAULT_COLLECTION_NAME,
+):
+    """List ChromaDB collection's documents given its name and embedding function"""
+    try:
+        indexer = IndexClient(embedding_model_id, chroma_uri, collection_name)
+        rprint(indexer.list_documents())
+    except Exception as e:
+        rprint(f"[red]{e}[/red]")
+    else:
+        rprint("✅ Done!")
+
+
+def clear(
+    embedding_model_id:str = DEFAULT_EMBEDDING_MODEL,
+    chroma_uri: str = DEFAULT_CHROMA_URI,
+    collection_name: str = DEFAULT_COLLECTION_NAME,
+):
+    """Clear a ChromaDB collection given its name and embedding function"""
+    try:
+        indexer = IndexClient(embedding_model_id, chroma_uri, collection_name)
+        rprint(f"BEFORE: {indexer.list_documents()}")
+        indexer.delete_documents()
+        rprint(f"AFTER: {indexer.list_documents()}")
+    except Exception as e:
+        rprint(f"[red]{e}[/red]")
+    else:
+        rprint("✅ Done!")
+
+
+def delete_collection(
+    chroma_uri: str = DEFAULT_CHROMA_URI,
+    collection_name: str = DEFAULT_COLLECTION_NAME,
+):
+    """Delete a given chromaDB collection given its name"""
+    try:
+        host, port = chroma_uri.split(":")
+        client = chromadb.HttpClient(host=host, port=int(port))
+        client.delete_collection(collection_name)
+    except Exception as e:
+        rprint(f"[red]{e}[/red]")
+    else:
+        rprint("✅ Done!")
+
+
+def search(
+    query:str,
+    n_results:int = DEFAULT_N_RESULTS,
+    embedding_model_id:str = DEFAULT_EMBEDDING_MODEL,
+    chroma_uri: str = DEFAULT_CHROMA_URI,
+    collection_name: str = DEFAULT_COLLECTION_NAME,
+):
+    """Search a given ChromaDB collection against a given textual query"""
+    # Chroma DB
+    chroma_host, chroma_port = chroma_uri.split(":")
+    client = chromadb.HttpClient(host=chroma_host, port=int(chroma_port))
+
+    # Chroma collection
+    emb_f = embedding_functions.SentenceTransformerEmbeddingFunction(embedding_model_id)
+    col = client.get_collection(collection_name, embedding_function=emb_f)
+
+    # Search
+    res = col.query(query_texts=[query], n_results=n_results)
+
+    for doc, meta in zip(res['documents'][0], res['metadatas'][0]):
+        content = doc.replace('\n', '')
+        rprint(f"ℹ️ [dim]{meta}[/dim]")
+        rprint(f"📃 {content}")
+        print("--------------\n")
+
+
+
 if __name__ == "__main__":
-    fire.Fire(index)
+    fire.Fire({
+        "index": index,
+        "clear": clear,
+        "search": search,
+        "ls": list_docs,
+        "delete-collection": delete_collection,
+    })

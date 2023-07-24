@@ -4,27 +4,42 @@ import fire
 from chromadb.utils import embedding_functions
 from llama import Llama
 from rich import print as rprint
-from typing import Optional
+
+from docqa.constants import DEFAULT_EMBEDDING_MODEL
+from docqa.constants import DEFAULT_COLLECTION_NAME
+from docqa.constants import DEFAULT_CHROMA_URI
+from docqa.constants import DEFAULT_CHUNK_SIZE
+from docqa.constants import DEFAULT_CHUNK_OVERLAP
+from docqa.constants import DEFAULT_TOKENIZER_PATH
+from docqa.constants import DEFAULT_TEMPERATURE
+from docqa.constants import DEFAULT_CKPT_DIR
+from docqa.constants import DEFAULT_TOP_P
+from docqa.constants import DEFAULT_MAX_SEQ_LEN
+from docqa.constants import DEFAULT_MAX_BATCH_SIZE
+from docqa.constants import DEFAULT_MAX_GEN_LEN
+from docqa.constants import DEFAULT_N_RESULTS
 
 
-def main(
-    embedding_model_id:str = 'all-MiniLM-L6-v2',
-    ckpt_dir: str = 'llama-2-7b-chat',
-    tokenizer_path: str = 'tokenizer.model',
-    temperature: float = 0.6,
-    top_p: float = 0.9,
-    max_seq_len: int = 512,
-    max_batch_size: int = 4,
-    max_gen_len: Optional[int] = None,
-    chroma_host:str = 'localhost',
-    chroma_port:str = '8000',
-    chroma_collection:str = 'llama-qa',
-    n_results:int = 3,
+def run(
+    embedding_model_id:str = DEFAULT_EMBEDDING_MODEL,
+    ckpt_dir: str = DEFAULT_CKPT_DIR,
+    tokenizer_path: str = DEFAULT_TOKENIZER_PATH,
+    temperature: float = DEFAULT_TEMPERATURE,
+    top_p: float = DEFAULT_TOP_P,
+    max_seq_len: int = DEFAULT_MAX_SEQ_LEN,
+    max_batch_size: int = DEFAULT_MAX_BATCH_SIZE,
+    max_gen_len: int = DEFAULT_MAX_GEN_LEN,
+    chroma_uri:str = DEFAULT_CHROMA_URI,
+    chroma_collection:str = DEFAULT_COLLECTION_NAME,
+    n_results:int = DEFAULT_N_RESULTS,
 ):
+    """Run a Document QA 🦙 chat"""
     rprint("🧬 Initializing DB")
     try:
         emb_f = embedding_functions.SentenceTransformerEmbeddingFunction(embedding_model_id)
-        client = chromadb.HttpClient(host=chroma_host, port=int(chroma_port))
+
+        host, port = chroma_uri.split(":")
+        client = chromadb.HttpClient(host=host, port=int(port))
         col = client.get_collection(chroma_collection, embedding_function=emb_f)
     except Exception as e:
         rprint(f"💥 [red]Error initializing chroma db: {e}[/red]")
@@ -78,10 +93,9 @@ def main(
         for dialog, result in zip(dialogs, results):
             rprint(f"🤖: {result['generation']['content']}")
             rprint("[dim]------[/dim]")
-            # rprint(f"[dim]Sources:{sources}[/dim]")
-            rprint(f"[dim]Sources:{hits['documents'][0]}[/dim]")
-            rprint("\n==================================\n")
+            rprint(f"[dim]Sources:{sources}[/dim]")
+            rprint("\n[magenta]==================================[/magenta]\n")
 
 
 if __name__ == "__main__":
-    fire.Fire(main)
+    fire.Fire(run)
