@@ -1,5 +1,6 @@
 import chromadb
 import fire
+import torch
 
 from chromadb.utils import embedding_functions
 from llama import Llama
@@ -34,6 +35,14 @@ def run(
     n_results:int = DEFAULT_N_RESULTS,
 ):
     """Run a Document QA 🦙 chat"""
+
+
+
+    rprint(
+        f"ℹ️ Cuda support: {torch.cuda.is_available()} "
+        f"({torch.cuda.device_count()} devices)"
+    )
+
     rprint("🧬 Initializing DB")
     try:
         emb_f = embedding_functions.SentenceTransformerEmbeddingFunction(embedding_model_id)
