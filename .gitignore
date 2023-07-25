@@ -156,3 +156,6 @@ cython_debug/
 tokenizer_checklist.chk
 tokenizer.model
 llama-2-*/
+
+# Data
+data/

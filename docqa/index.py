@@ -20,6 +20,7 @@ from rich import print as rprint
 from rich.console import Console
 from tqdm.auto import tqdm
 
+from docqa import file_sha1
 from docqa.constants import DEFAULT_EMBEDDING_MODEL
 from docqa.constants import DEFAULT_COLLECTION_NAME
 from docqa.constants import DEFAULT_CHROMA_URI

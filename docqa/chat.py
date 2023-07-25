@@ -37,7 +37,7 @@ def run(
     """Run a Document QA 🦙 chat"""
 
     rprint(
-        f"ℹ️ Cuda support: {torch.cuda.is_available()} "
+        f"ℹ️  Cuda support: {torch.cuda.is_available()} "
         f"({torch.cuda.device_count()} devices)"
     )
 
@@ -67,9 +67,10 @@ def run(
     while query := input("🗣️: "):
         # Search
         hits = col.query(query_texts=[query], n_results=n_results)
-        sources = hits['metadatas'][0]
-        context =  "\nContext: ".join([
-            "Excerpt {i}: {ctx}" for i, ctx in enumerate(hits['documents'][0])
+        metas = hits['metadatas'][0]
+        sources = [ctx.replace('\n','') for ctx in hits['documents'][0]]
+        context =  "\n".join([
+            "Excerpt {i}: {ctx}" for i, ctx in enumerate(sources)
         ])
         # context = ""
         # sources = []
@@ -102,9 +103,9 @@ def run(
         for _, result in zip(dialogs, results):
             rprint(f"🤖: {result['generation']['content']}")
             rprint("[dim]------[/dim]")
-            for src_meta, src_content in zip(sources, hits['documents'][0]):
-                rprint(f"[dim]Sources:{src_meta}[/dim]")
-                rprint(f"[dim]Sources:{src_content[:50]}[/dim]")
+            for src_meta, src_content in zip(metas, sources):
+                rprint(f"Source:[dim]{src_meta}[/dim]")
+                rprint(f"Context:[dim]{src_content[:250]}[/dim]")
 
         rprint("\n[magenta]==================================[/magenta]\n")
 
