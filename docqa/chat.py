@@ -36,8 +36,6 @@ def run(
 ):
     """Run a Document QA 🦙 chat"""
 
-
-
     rprint(
         f"ℹ️ Cuda support: {torch.cuda.is_available()} "
         f"({torch.cuda.device_count()} devices)"
@@ -73,6 +71,8 @@ def run(
         context =  "\nContext: ".join([
             "Excerpt {i}: {ctx}" for i, ctx in enumerate(hits['documents'][0])
         ])
+        # context = ""
+        # sources = []
 
         system_content = (
             "Use the following pieces of context to answer the question at the end. "
@@ -99,11 +99,14 @@ def run(
             top_p=top_p,
         )
 
-        for dialog, result in zip(dialogs, results):
+        for _, result in zip(dialogs, results):
             rprint(f"🤖: {result['generation']['content']}")
             rprint("[dim]------[/dim]")
-            rprint(f"[dim]Sources:{sources}[/dim]")
-            rprint("\n[magenta]==================================[/magenta]\n")
+            for src_meta, src_content in zip(sources, hits['documents'][0]):
+                rprint(f"[dim]Sources:{src_meta}[/dim]")
+                rprint(f"[dim]Sources:{src_content[:50]}[/dim]")
+
+        rprint("\n[magenta]==================================[/magenta]\n")
 
 
 if __name__ == "__main__":
