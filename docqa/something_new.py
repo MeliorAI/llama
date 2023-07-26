@@ -1,15 +1,16 @@
 import glob
 import os
-from typing import Any
-from typing import Dict
-from typing import List
+from collections import defaultdict
+from typing import Any, Dict, List
 
 import chromadb
 import fire
-
 from chromadb.types import Collection
 from chromadb.utils import embedding_functions
-from collections import defaultdict
+from docqa import file_sha1
+from docqa.constants import (DEFAULT_CHROMA_URI, DEFAULT_CHUNK_OVERLAP,
+                             DEFAULT_CHUNK_SIZE, DEFAULT_COLLECTION_NAME,
+                             DEFAULT_EMBEDDING_MODEL, DEFAULT_N_RESULTS)
 from funcy import chunks
 from langchain.docstore.document import Document
 from langchain.document_loaders import PDFMinerLoader
@@ -19,15 +20,6 @@ from rich import print as rprint
 from rich.console import Console
 from tabulate import tabulate
 from tqdm.auto import tqdm
-
-from docqa import file_sha1
-from docqa.constants import DEFAULT_EMBEDDING_MODEL
-from docqa.constants import DEFAULT_COLLECTION_NAME
-from docqa.constants import DEFAULT_CHROMA_URI
-from docqa.constants import DEFAULT_CHUNK_SIZE
-from docqa.constants import DEFAULT_CHUNK_OVERLAP
-from docqa.constants import DEFAULT_N_RESULTS
-
 
 console = Console()
 
@@ -281,8 +273,6 @@ if __name__ == "__main__":
             "dir": dir,
             "clear": clear,
             "search": search,
-            "lsc": list_collections,
-            "lsd": list_docs,
             "delete-collection": delete_collection,
         }
     )
