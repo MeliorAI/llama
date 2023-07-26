@@ -259,5 +259,6 @@ if __name__ == "__main__":
             "clear": clear,
             "lsc": list_collections,
             "lsd": list_docs,
+            "delete-collection": delete_collection,
         }
     )
