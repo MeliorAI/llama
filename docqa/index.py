@@ -248,30 +248,7 @@ def delete_collection(
         rprint("✅ Done!")
 
 
-def search(
-    query: str,
-    n_results: int = DEFAULT_N_RESULTS,
-    embedding_model_id: str = DEFAULT_EMBEDDING_MODEL,
-    chroma_uri: str = DEFAULT_CHROMA_URI,
-    collection_name: str = DEFAULT_COLLECTION_NAME,
-):
-    """Search a given ChromaDB collection against a given textual query"""
-    # Chroma DB
-    chroma_host, chroma_port = chroma_uri.split(":")
-    client = chromadb.HttpClient(host=chroma_host, port=int(chroma_port))
 
-    # Chroma collection
-    emb_f = embedding_functions.SentenceTransformerEmbeddingFunction(embedding_model_id)
-    col = client.get_collection(collection_name, embedding_function=emb_f)
-
-    # Search
-    res = col.query(query_texts=[query], n_results=n_results)
-
-    for doc, meta in zip(res["documents"][0], res["metadatas"][0]):
-        content = doc.replace("\n", "")
-        rprint(f"ℹ️ [dim]{meta}[/dim]")
-        rprint(f"📃 {content}")
-        print("--------------\n")
 
 
 if __name__ == "__main__":
@@ -280,7 +257,6 @@ if __name__ == "__main__":
             "pdf": pdf,
             "dir": dir,
             "clear": clear,
-            "search": search,
             "lsc": list_collections,
             "lsd": list_docs,
             "delete-collection": delete_collection,
