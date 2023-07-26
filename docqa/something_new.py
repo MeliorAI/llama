@@ -273,6 +273,8 @@ if __name__ == "__main__":
             "dir": dir,
             "clear": clear,
             "search": search,
+            "lsc": list_collections,
+            "lsd": list_docs,
             "delete-collection": delete_collection,
         }
     )
