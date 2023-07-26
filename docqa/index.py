@@ -11,13 +11,10 @@ from chromadb.types import Collection
 from chromadb.utils import embedding_functions
 from collections import defaultdict
 from funcy import chunks
-from langchain.callbacks.manager import CallbackManagerForChainRun
-from langchain.chains import RetrievalQA
 from langchain.docstore.document import Document
 from langchain.document_loaders import PDFMinerLoader
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import Chroma
 from rich import print as rprint
 from rich.console import Console
 from tabulate import tabulate
