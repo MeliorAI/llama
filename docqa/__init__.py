@@ -8,6 +8,7 @@ class NoIndexError(Exception):
 class RetrieverNotInitialized(Exception):
     pass
 
+
 def file_sha1(filename):
     h = sha1()
     b = bytearray(128 * 1024)
