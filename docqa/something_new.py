@@ -278,3 +278,5 @@ if __name__ == "__main__":
             "delete-collection": delete_collection,
         }
     )
+
+    print("buuu")
